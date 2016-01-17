@@ -52,7 +52,7 @@ public class TaskService {
         try {
             task.setStatus(Status.RUNNING);
             taskRepository.store(task);
-            Future<String> future = executor.submit(new Executor(task.getCode()));
+            Future<String> future = executor.submit(new Executor(task));
             String consoleOutput = future.get(10, TimeUnit.SECONDS);
             task.setConsoleOutput(consoleOutput);
             task.setStatus(Status.COMPLETED);

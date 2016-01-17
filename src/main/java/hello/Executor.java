@@ -11,9 +11,11 @@ import java.util.concurrent.Callable;
  */
 public class Executor implements Callable<String> {
     private String javascript;
+    private Task task;
 
-    public Executor(String javascript) {
-        this.javascript = javascript;
+    public Executor(Task task) {
+        this.task = task;
+        this.javascript = this.task.getCode();
     }
 
     @Override
