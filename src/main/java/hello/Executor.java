@@ -5,6 +5,8 @@ import javax.script.ScriptEngineManager;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
@@ -12,6 +14,8 @@ import java.util.concurrent.Callable;
 public class Executor implements Callable<String> {
     private String javascript;
     private Task task;
+    private ExecutorService service;
+    private Future<String> future;
 
     public Executor(Task task) {
         this.task = task;
