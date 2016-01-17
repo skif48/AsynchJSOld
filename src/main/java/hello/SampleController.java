@@ -3,6 +3,7 @@ package hello;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
+
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
@@ -19,7 +20,7 @@ public class SampleController {
     @Autowired
     private TaskService taskService;
 
-    @RequestMapping("/instruction")
+    @RequestMapping("/")
     @ResponseBody
     String home() {
         return "Instructions:\n/task + GET = list of tasks;\n/task/{taskUUID} + GET = task data by id;\n";
@@ -50,9 +51,10 @@ public class SampleController {
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    String executeTask(@RequestBody String javascript){
+    Object executeTask(@RequestBody String javascript){
         Task task = taskService.createTask(javascript);
-        return taskService.executeTask(task.getId());
+        taskService.executeTask(task.getId());
+        return task.getId();
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.DELETE)
@@ -63,6 +65,17 @@ public class SampleController {
             return "all running tasks were deleted successfully";
         } catch (Exception e) {
             return "deleting currently running tasks was failed";
+        }
+    }
+
+    @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
+    @ResponseBody
+    String deleteByID(@PathVariable("taskID") String taskID){
+        try {
+            taskService.deleteTaskByID(UUID.fromString(taskID));
+            return taskID + " was deleted";
+        } catch (Exception e){
+            return "deleting task " + taskID + " failed";
         }
     }
 

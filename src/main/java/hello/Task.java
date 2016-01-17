@@ -19,6 +19,13 @@ public class Task {
         this.status = Status.WAITING;
     }
 
+    public Task(Task task){
+        this.id = task.id;
+        this.code = task.code;
+        this.status = task.status;
+        this.consoleOutput = task.consoleOutput;
+    }
+
     public UUID getId() {
         return id;
     }

@@ -17,7 +17,7 @@ import java.util.concurrent.*;
  * Created by Vladyslav Usenko on 16.01.2016.
  */
 @Service
-public class TaskService {
+public class TaskService implements Listener {
 
     private ExecutorService executor = Executors.newCachedThreadPool();
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
@@ -46,27 +46,14 @@ public class TaskService {
         return consoleOutput;
     }
 
-    public String executeTask(UUID id) {
+    public void executeTask(UUID id) {
         Task task = taskRepository.load(id);
 
-        try {
-            task.setStatus(Status.RUNNING);
-            taskRepository.store(task);
-            Future<String> future = executor.submit(new Executor(task.getCode()));
-            String consoleOutput = future.get(10, TimeUnit.SECONDS);
-            task.setConsoleOutput(consoleOutput);
-            task.setStatus(Status.COMPLETED);
-        } catch (TimeoutException e) {
-            task.setConsoleOutput("time out error");
-            task.setStatus(Status.TERMINATED);
-        } catch (Exception e) {
-            LOGGER.error("Unexpected error", e);
-            task.setConsoleOutput("server error");
-            task.setStatus(Status.ERROR);
-        } finally {
-            taskRepository.store(task);
-        }
-        return task.getConsoleOutput();
+        task.setStatus(Status.RUNNING);
+        taskRepository.store(task);
+
+        Executable executable = new Executable(task, this, executor);
+        executor.submit(executable);
     }
 
     public void deleteTaskByID(UUID uuid){
@@ -82,5 +69,11 @@ public class TaskService {
 
     public Collection<Task> getTasks() {
         return taskRepository.loadAll();
+    }
+
+    @Override
+    public void onComplete(Task task) {
+        taskRepository.store(task);
+        LOGGER.info("Completed " + task.getId());
     }
 }
