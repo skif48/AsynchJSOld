@@ -18,4 +18,9 @@ public class AppConfiguration {
     public TaskService taskService() {
         return new TaskService();
     }
+
+    @Bean
+    public JavaScriptServiceFactory executableFactory(){
+        return new JavaScriptServiceFactoryImpl();
+    }
 }

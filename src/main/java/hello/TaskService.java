@@ -4,11 +4,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -23,27 +18,23 @@ public class TaskService implements Listener {
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
 
     @Autowired
-    public TaskRepository taskRepository;
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private JavaScriptServiceFactory javaScriptServiceFactory;
+
+    public TaskService() {
+    }
+
+    public TaskService(TaskRepository taskRepository, JavaScriptServiceFactory javaScriptServiceFactory) {
+        this.taskRepository = taskRepository;
+        this.javaScriptServiceFactory = javaScriptServiceFactory;
+    }
 
     public Task createTask(String code) {
         Task task = new Task(code);
         taskRepository.store(task);
         return task;
-    }
-
-    public static String executeJS(String js) {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-        StringWriter sw = new StringWriter();
-        String consoleOutput;
-        engine.getContext().setWriter(sw);
-        try {
-            engine.eval(new StringReader(js));
-            consoleOutput = sw.toString();
-        } catch (Exception e) {
-            consoleOutput = "Error during interpretation of JS code";
-        }
-
-        return consoleOutput;
     }
 
     public void executeTask(UUID id) {
@@ -52,8 +43,7 @@ public class TaskService implements Listener {
         task.setStatus(Status.RUNNING);
         taskRepository.store(task);
 
-        Executable executable = new Executable(task, this, executor);
-        executor.submit(executable);
+       javaScriptServiceFactory.createExecutable(task, this);
     }
 
     public void deleteTaskByID(UUID uuid){
@@ -67,13 +57,20 @@ public class TaskService implements Listener {
         }
     }
 
+    public Task getTask(UUID uuid){
+        return taskRepository.load(uuid);
+    }
+
     public Collection<Task> getTasks() {
         return taskRepository.loadAll();
     }
 
     @Override
     public void onComplete(Task task) {
-        taskRepository.store(task);
-        LOGGER.info("Completed " + task.getId());
+        Status currentStatus = taskRepository.load(task.getId()).getStatus();
+        if(currentStatus != Status.DELETED) {
+            taskRepository.store(task);
+            LOGGER.info("Completed " + task.getId());
+        }
     }
 }

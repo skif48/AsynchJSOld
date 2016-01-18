@@ -59,4 +59,27 @@ public class Task {
             return false;
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Task task = (Task) o;
+
+        if (id != null ? !id.equals(task.id) : task.id != null) return false;
+        if (code != null ? !code.equals(task.code) : task.code != null) return false;
+        if (status != task.status) return false;
+        return consoleOutput != null ? consoleOutput.equals(task.consoleOutput) : task.consoleOutput == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (code != null ? code.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
+        result = 31 * result + (consoleOutput != null ? consoleOutput.hashCode() : 0);
+        return result;
+    }
 }

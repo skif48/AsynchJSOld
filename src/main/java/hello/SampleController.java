@@ -3,7 +3,6 @@ package hello;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
-
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
@@ -20,7 +19,7 @@ public class SampleController {
     @Autowired
     private TaskService taskService;
 
-    @RequestMapping("/")
+    @RequestMapping("/i")
     @ResponseBody
     String home() {
         return "Instructions:\n/task + GET = list of tasks;\n/task/{taskUUID} + GET = task data by id;\n";
@@ -40,7 +39,7 @@ public class SampleController {
             return "invalid task id";
         }
 
-        Task task = taskService.taskRepository.load(UUID.fromString(taskID));
+        Task task = taskService.getTask(UUID.fromString(taskID));
 
         if(task == null) {
             return "invalid task id";
@@ -51,10 +50,14 @@ public class SampleController {
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    Object executeTask(@RequestBody String javascript){
-        Task task = taskService.createTask(javascript);
-        taskService.executeTask(task.getId());
-        return task.getId();
+    Object executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
+        if(javascript != ""){
+            Task task = taskService.createTask(javascript);
+            taskService.executeTask(task.getId());
+            return task.getId();
+        }
+
+        return "empty request";
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.DELETE)

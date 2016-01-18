@@ -11,13 +11,11 @@ import java.util.concurrent.Future;
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
  */
-public class Executor implements Callable<String> {
+public class JavaScriptImplementator implements Callable<String> {
     private String javascript;
     private Task task;
-    private ExecutorService service;
-    private Future<String> future;
 
-    public Executor(Task task) {
+    public JavaScriptImplementator(Task task) {
         this.task = task;
         this.javascript = this.task.getCode();
     }
