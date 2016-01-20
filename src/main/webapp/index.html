@@ -1,4 +1,49 @@
+<!doctype html>
 <html>
-<meta http-equiv="refresh" content="5" >
-<body>ghjghj</body>
+<head>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha256-7s5uDGW3AHqw6xtJmNNtr+OBRJUlgkNJEo78P4b0yRw= sha512-nNo+yCHEyn0smMxSswnf/OnX6/KwJuZTlNZBjauKhTK0c+zT+q5JOCx0UFhXQ6rJR9jg6Es8gPuD2uZcYDLqSw==" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha256-KXn5puMvxCw+dAYznun+drMdG1IFl3agK0p/pqT9KAo= sha512-2e8qq0ETcfWRI4HJBzQiA3UoyFk6tbNyG+qSaIBZLyW9Xf3sWZHN/lxe9fTh1U45DpPf07yj94KsUHHWe4Yk1A==" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular-resource.js"></script>
+    <script src="/js/javascript.js"></script>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link href='https://fonts.googleapis.com/css?family=Play' rel='stylesheet' type='text/css'>
+</head>
+<body ng-app="main">
+    <div class="container" ng-controller="mainController">
+        <div class="row">
+            <div class="col-md-12">
+                <h1>JS asynch interpretation</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <textarea class="textArea" rows="10" cols="50" placeholder="Enter JS here..." ng-model="model.javascript"></textarea>
+            </div>
+            <div class="col-md-6">
+                <table>
+                    <tr>
+                        <th>UUID</th>
+                        <th>Execution Time</th>
+                        <th>Local time</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                    <tr ng-repeat="task in tasks">
+                        <td>{{task.UUID}}</td>
+                        <td>{{task.executionTime}}</td>
+                        <td>{{task.localTime | date }}</td>
+                        <td>{{task.status}}</td>
+                        <td><input type="image" src="http://www.clipartbest.com/cliparts/ncX/ByX/ncXByXMgi.gif" alt="kill" width="20" height="20" ng-click="killTask($index)"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1">
+                <input class="myButton" type="submit" value="submit" ng-click="submitClick()">
+            </div>
+        </div>
+    </div>
+</body>
 </html>

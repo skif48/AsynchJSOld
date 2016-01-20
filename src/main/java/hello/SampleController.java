@@ -1,5 +1,6 @@
 package hello;
 
+import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -7,6 +8,8 @@ import org.springframework.boot.autoconfigure.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,7 +23,7 @@ public class SampleController {
     @Autowired
     private TaskService taskService;
 
-    @RequestMapping("/")
+    @RequestMapping("/i")
     @ResponseBody
     String home() {
         return "Instructions:\n/task + GET = list of tasks;\n/task/{taskUUID} + GET = task data by id;\n";
@@ -30,6 +33,10 @@ public class SampleController {
     @ResponseBody
     Object getTaskList() {
         Collection<Task> list = taskService.getTasks();
+        Map<String, String> map = new HashMap<String, String>();
+        for (Task t : list) {
+            map.put("task", t.toString());
+        }
         return list;
     }
 
