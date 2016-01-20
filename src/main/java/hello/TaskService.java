@@ -43,7 +43,7 @@ public class TaskService implements Listener {
         task.setStatus(Status.RUNNING);
         taskRepository.store(task);
 
-       javaScriptServiceFactory.createExecutable(task, this);
+       javaScriptServiceFactory.createJavaScriptService(task, this);
     }
 
     public void deleteTaskByID(UUID uuid){
@@ -52,8 +52,7 @@ public class TaskService implements Listener {
 
     public void deleteAllTasks(){
         for (Task t : taskRepository.loadAll()) {
-            if(t.getStatus() == Status.RUNNING)
-                deleteTaskByID(t.getId());
+            deleteTaskByID(t.getId());
         }
     }
 

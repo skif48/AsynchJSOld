@@ -33,4 +33,18 @@ public class HelloTest {
         taskService.executeTask(task.getId());
         Assert.assertNotNull(taskRepository.load(task.getId()).getConsoleOutput());
     }
+
+    @Test
+    public void whenDeleteByIDThenTaskIsDELETED() throws Exception{
+        taskService.deleteTaskByID(task.getId());
+        Assert.assertEquals(Status.DELETED, taskRepository.load(task.getId()).getStatus());
+    }
+
+    @Test
+    public void whenDeleteAllTasksThenAllTasksAreDELETED() throws Exception{
+        taskService.deleteAllTasks();
+        for (Task task : taskRepository.loadAll()) {
+            Assert.assertEquals(Status.DELETED, task.getStatus());
+        }
+    }
 }
