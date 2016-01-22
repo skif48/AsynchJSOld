@@ -24,6 +24,7 @@
                 <table>
                     <tr>
                         <th>UUID</th>
+                        <th>Console Output</th>
                         <th>Execution Time</th>
                         <th>Local time</th>
                         <th>Status</th>
@@ -31,6 +32,7 @@
                     </tr>
                     <tr ng-repeat="task in tasks">
                         <td>{{task.UUID}}</td>
+                        <td class="console">{{task.consoleOutput}}</td>
                         <td>{{task.executionTime}}</td>
                         <td>{{task.localTime | date }}</td>
                         <td>{{task.status}}</td>

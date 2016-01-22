@@ -12,15 +12,14 @@ app.factory('service', function ($resource) {
 
 app.controller('mainController', function($scope, service){
     $scope.tasks = [
-        {UUID : 123123123, executionTime : 15, localTime : Date.now(), status: 'COMPLETED'},
-        {UUID : 123656, executionTime : 15, localTime : Date.now(), status: 'TERMINATED'},
-        {UUID : 12786433123, executionTime : 15, localTime : Date.now(), status: 'DELETED'}
+        {UUID : 123123123, consoleOutput: 'simple output', executionTime : 15, localTime : Date.now(), status: 'COMPLETED'},
+        {UUID : 123656, consoleOutput: 'not so simple output',executionTime : 15, localTime : Date.now(), status: 'TERMINATED'},
+        {UUID : 12786433123, consoleOutput: 'quite complicated output', executionTime : 15, localTime : Date.now(), status: 'DELETED'}
     ];
 
     $scope.model = {javascript:'js'};
 
     $scope.submitClick = function(){
-        //alert($scope.model.javascript);
         service.execute($scope.model.javascript);
     }
 
