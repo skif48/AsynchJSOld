@@ -9,12 +9,11 @@ import javax.script.ScriptException;
  * Created by Vladyslav Usenko on 23.01.2016.
  */
 public class JavaScriptPreCompiler {
-    public static String preCompileJS(String javascript) throws ScriptException {
+    public static void preCompileJS(String javascript) throws ScriptException {
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
         if (engine instanceof Compilable) {
             Compilable compEngine = (Compilable) engine;
             compEngine.compile(javascript);
         }
-        return "valid";
     }
 }
