@@ -25,11 +25,7 @@ public class TaskRepository {
     }
 
     public synchronized Collection<Task> loadAll() {
-        Collection<Task> result = new ArrayList<Task>();
-        for (Task task : repository.values()) {
-            result.add(new Task(task));
-        }
-        return result;
+        return new ArrayList<Task>(repository.values());
     }
 
     public synchronized void delete(UUID uuid){

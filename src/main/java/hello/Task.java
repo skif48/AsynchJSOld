@@ -73,13 +73,4 @@ public class Task {
         return consoleOutput != null ? consoleOutput.equals(task.consoleOutput) : task.consoleOutput == null;
 
     }
-
-    @Override
-    public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (code != null ? code.hashCode() : 0);
-        result = 31 * result + (status != null ? status.hashCode() : 0);
-        result = 31 * result + (consoleOutput != null ? consoleOutput.hashCode() : 0);
-        return result;
-    }
 }
