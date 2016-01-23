@@ -5,6 +5,8 @@ import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
+
+import javax.script.ScriptException;
 import java.util.Collection;
 import java.util.UUID;
 
@@ -51,7 +53,13 @@ public class SampleController {
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
     Object executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
-        if(javascript != ""){
+        if(!javascript.equals("")){
+            try {
+                JavaScriptPreCompiler.preCompileJS(javascript);
+            } catch (ScriptException e){
+                return e.toString();
+            }
+
             Task task = taskService.createTask(javascript);
             taskService.executeTask(task.getId());
             return task.getId();

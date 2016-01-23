@@ -5,8 +5,6 @@ import javax.script.ScriptEngineManager;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
@@ -32,7 +30,6 @@ public class JavaScriptImplementator implements Callable<String> {
         } catch (Exception e) {
             consoleOutput = "Error during interpretation of JS code";
         }
-
         return consoleOutput;
     }
 }

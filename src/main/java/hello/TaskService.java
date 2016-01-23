@@ -4,6 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import javax.script.*;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -43,7 +45,7 @@ public class TaskService implements Listener {
         task.setStatus(Status.RUNNING);
         taskRepository.store(task);
 
-       javaScriptServiceFactory.createJavaScriptService(task, this);
+        javaScriptServiceFactory.createJavaScriptService(task, this);
     }
 
     public void deleteTaskByID(UUID uuid){
