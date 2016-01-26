@@ -8,7 +8,7 @@ public class JavaScriptServiceFactoryStub implements JavaScriptServiceFactory {
     public void createJavaScriptService(final Task task, final Listener listener) {
 
                 task.setConsoleOutput("hello");
-                task.setStatus(Status.COMPLETED);
+                task.setScriptStatus(ScriptStatus.COMPLETED);
                 listener.onComplete(task);
 
         }

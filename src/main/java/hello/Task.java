@@ -10,19 +10,19 @@ public class Task {
     private final UUID id;
     private final String code;
 
-    private Status status;
+    private ScriptStatus scriptStatus;
     private String consoleOutput;
 
     public Task(String code) {
         this.id = UUID.randomUUID();
         this.code = code;
-        this.status = Status.WAITING;
+        this.scriptStatus = ScriptStatus.WAITING;
     }
 
     public Task(Task task){
         this.id = task.id;
         this.code = task.code;
-        this.status = task.status;
+        this.scriptStatus = task.scriptStatus;
         this.consoleOutput = task.consoleOutput;
     }
 
@@ -34,12 +34,12 @@ public class Task {
         return code;
     }
 
-    public Status getStatus() {
-        return status;
+    public ScriptStatus getScriptStatus() {
+        return scriptStatus;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public void setScriptStatus(ScriptStatus scriptStatus) {
+        this.scriptStatus = scriptStatus;
     }
 
     public String getConsoleOutput() {
@@ -53,7 +53,6 @@ public class Task {
     public static boolean isValidTaskId(String value) {
         try {
             UUID.fromString(value);
-
             return true;
         } catch (Exception e) {
             return false;
@@ -69,7 +68,7 @@ public class Task {
 
         if (id != null ? !id.equals(task.id) : task.id != null) return false;
         if (code != null ? !code.equals(task.code) : task.code != null) return false;
-        if (status != task.status) return false;
+        if (scriptStatus != task.scriptStatus) return false;
         return consoleOutput != null ? consoleOutput.equals(task.consoleOutput) : task.consoleOutput == null;
 
     }

@@ -53,26 +53,26 @@ public class SampleController {
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
     Object executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
-        if(!javascript.equals("")){
-            try {
-                JavaScriptPreCompiler.preCompileJS(javascript);
-            } catch (ScriptException e){
-                return e.toString();
-            }
-
-            Task task = taskService.createTask(javascript);
-            taskService.executeTask(task.getId());
-            return task.getId();
+        if(javascript.equals("")){
+            return "empty request";
         }
 
-        return "empty request";
+        try {
+            JavaScriptPreCompiler.preCompileJS(javascript);
+        } catch (ScriptException e){
+            return e.toString();
+        }
+
+        Task task = taskService.createTask(javascript);
+        taskService.executeTask(task.getId());
+        return task.getId();
     }
 
-    @RequestMapping(value = "/task", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/task/all/{type}", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteAll(){
+    String deleteAll(@PathVariable("type") String type){
         try {
-            taskService.deleteAllTasks();
+            taskService.killAllTasks();
             return "all running tasks were deleted successfully";
         } catch (Exception e) {
             return "deleting currently running tasks was failed";
@@ -81,12 +81,12 @@ public class SampleController {
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteByID(@PathVariable("taskID") String taskID){
+    String deleteByID(@PathVariable("taskID") UUID taskID){
         try {
-            taskService.deleteTaskByID(UUID.fromString(taskID));
+            taskService.taskKillOrDelete(taskID);
             return taskID + " was deleted";
         } catch (Exception e){
-            return "deleting task " + taskID + " failed";
+            return e.toString();
         }
     }
 

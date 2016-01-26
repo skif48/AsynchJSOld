@@ -23,16 +23,16 @@ public class JavaScriptService implements Runnable {
     public void run() {
         try {
             Future<String> future = executorService.submit(new JavaScriptImplementator(task));
-            String consoleOutput = future.get(15, TimeUnit.SECONDS);
+            String consoleOutput = future.get(30, TimeUnit.SECONDS);
             task.setConsoleOutput(consoleOutput);
-            task.setStatus(Status.COMPLETED);
+            task.setScriptStatus(ScriptStatus.COMPLETED);
         } catch (TimeoutException e) {
             task.setConsoleOutput("time out error");
-            task.setStatus(Status.TERMINATED);
+            task.setScriptStatus(ScriptStatus.TERMINATED);
         } catch (Exception e) {
             //LOGGER.error("Unexpected error", e);
             task.setConsoleOutput("server error");
-            task.setStatus(Status.ERROR);
+            task.setScriptStatus(ScriptStatus.ERROR);
         }
 
         listener.onComplete(task);

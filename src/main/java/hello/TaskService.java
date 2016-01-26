@@ -5,7 +5,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.script.*;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -42,10 +41,45 @@ public class TaskService implements Listener {
     public void executeTask(UUID id) {
         Task task = taskRepository.load(id);
 
-        task.setStatus(Status.RUNNING);
+        task.setScriptStatus(ScriptStatus.RUNNING);
         taskRepository.store(task);
 
         javaScriptServiceFactory.createJavaScriptService(task, this);
+    }
+
+    public void allTasksKillOrDelete(String type){
+        if (type.equals("kill")){
+            killAllTasks();
+        }
+        if (type.equals("delete")){
+            deleteAllTasks();
+        }
+    }
+
+    public void taskKillOrDelete(UUID uuid){
+        Task task = taskRepository.load(uuid);
+        switch (task.getScriptStatus()){
+            case WAITING: killTaskByID(uuid);
+                break;
+            case RUNNING: killTaskByID(uuid);
+                break;
+            case COMPLETED: deleteTaskByID(uuid);
+                break;
+            case ERROR: deleteTaskByID(uuid);
+                break;
+            case TERMINATED: deleteTaskByID(uuid);
+                break;
+            case KILLED: deleteTaskByID(uuid);
+                break;
+        }
+    }
+
+    public void killTaskByID(UUID uuid){
+        taskRepository.kill(uuid);
+    }
+
+    public void killAllTasks(){
+        taskRepository.killAll();
     }
 
     public void deleteTaskByID(UUID uuid){
@@ -53,9 +87,7 @@ public class TaskService implements Listener {
     }
 
     public void deleteAllTasks(){
-        for (Task t : taskRepository.loadAll()) {
-            deleteTaskByID(t.getId());
-        }
+        taskRepository.deleteAll();
     }
 
     public Task getTask(UUID uuid){
@@ -68,8 +100,8 @@ public class TaskService implements Listener {
 
     @Override
     public void onComplete(Task task) {
-        Status currentStatus = taskRepository.load(task.getId()).getStatus();
-        if(currentStatus != Status.DELETED) {
+        ScriptStatus currentScriptStatus = taskRepository.load(task.getId()).getScriptStatus();
+        if(currentScriptStatus != ScriptStatus.KILLED) {
             taskRepository.store(task);
             LOGGER.info("Completed " + task.getId());
         }
