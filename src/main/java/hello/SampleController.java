@@ -3,6 +3,8 @@ package hello;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,64 +31,61 @@ public class SampleController {
 
     @RequestMapping(value = "/task", method = RequestMethod.GET)
     @ResponseBody
-    Object getTaskList() {
+    ResponseEntity<Collection<Task>> getTaskList() {
         Collection<Task> list = taskService.getTasks();
-        return list;
+        ResponseEntity<Collection<Task>> responseEntity = new ResponseEntity<Collection<Task>>(list, HttpStatus.OK);
+        return responseEntity;
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.GET)
     @ResponseBody
-    Object getTaskByID(@PathVariable("taskID") String taskID) {
+    ResponseEntity<Task> getTaskByID(@PathVariable("taskID") String taskID) {
         if (!Task.isValidTaskId(taskID)) {
-            return "invalid task id";
+            return new ResponseEntity("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
         Task task = taskService.getTask(UUID.fromString(taskID));
 
         if(task == null) {
-            return "invalid task id";
+            return new ResponseEntity("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
-        return task;
+        return new ResponseEntity(task, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    Object executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
-        if(javascript.equals("")){
-            return "empty request";
-        }
-
+    ResponseEntity<UUID> executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
         try {
             JavaScriptPreCompiler.preCompileJS(javascript);
         } catch (ScriptException e){
-            return e.toString();
+            return new ResponseEntity(e, HttpStatus.BAD_REQUEST);
         }
 
         Task task = taskService.createTask(javascript);
         taskService.executeTask(task.getId());
-        return task.getId();
+        return new ResponseEntity<UUID>(task.getId(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "/task/all/{type}", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteAll(@PathVariable("type") String type){
+    ResponseEntity<String> deleteAll(@PathVariable("type") String type){
         try {
             taskService.killAllTasks();
-            return "all running tasks were deleted successfully";
+            return new ResponseEntity<String>("all running tasks were deleted successfully", HttpStatus.OK);
         } catch (Exception e) {
-            return "deleting currently running tasks was failed";
+            return new ResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteByID(@PathVariable("taskID") UUID taskID){
+    ResponseEntity<String> deleteByID(@PathVariable("taskID") UUID taskID){
         try {
             taskService.taskKillOrDelete(taskID);
-            return taskID + " was deleted";
+            return new ResponseEntity<String>(taskID + " was deleted", HttpStatus.OK);
         } catch (Exception e){
-            return e.toString();
+            return new ResponseEntity<String>(e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
