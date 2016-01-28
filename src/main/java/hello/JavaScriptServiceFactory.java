@@ -1,5 +1,7 @@
 package hello;
 
+import java.util.concurrent.Future;
+
 /**
  * Created by Vladyslav Usenko on 17.01.2016.
  */

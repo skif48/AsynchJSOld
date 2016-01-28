@@ -39,53 +39,59 @@ public class SampleController {
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.GET)
     @ResponseBody
-    ResponseEntity<Task> getTaskByID(@PathVariable("taskID") String taskID) {
+    ResponseEntity getTaskByID(@PathVariable("taskID") String taskID) {
         if (!Task.isValidTaskId(taskID)) {
-            return new ResponseEntity("Invalid task UUID", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
         Task task = taskService.getTask(UUID.fromString(taskID));
 
         if(task == null) {
-            return new ResponseEntity("Invalid task UUID", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
-        return new ResponseEntity(task, HttpStatus.OK);
+        return new ResponseEntity<Task>(task, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    ResponseEntity<UUID> executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
+    ResponseEntity<String> executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
         try {
-            JavaScriptPreCompiler.preCompileJS(javascript);
+            JavaScriptImplementator.preCompileJS(javascript);
         } catch (ScriptException e){
-            return new ResponseEntity(e, HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>(e.toString(), HttpStatus.BAD_REQUEST);
         }
 
         Task task = taskService.createTask(javascript);
         taskService.executeTask(task.getId());
-        return new ResponseEntity<UUID>(task.getId(), HttpStatus.OK);
+        return new ResponseEntity<String>(task.getId().toString(), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/task/all/{type}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/task/all", method = RequestMethod.DELETE)
     @ResponseBody
-    ResponseEntity<String> deleteAll(@PathVariable("type") String type){
+    ResponseEntity deleteOrKillAll(@RequestParam("type") String type){
         try {
-            taskService.killAllTasks();
-            return new ResponseEntity<String>("all running tasks were deleted successfully", HttpStatus.OK);
+            if(type.equals("kill"))
+                taskService.killAllTasks();
+            else if(type.equals("delete"))
+                taskService.deleteAllTasks();
+            return new ResponseEntity<String>("all running/waiting tasks were deleted successfully", HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity(e, HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<Exception>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
     @ResponseBody
-    ResponseEntity<String> deleteByID(@PathVariable("taskID") UUID taskID){
+    ResponseEntity deleteOrKillByID(@PathVariable("taskID") UUID taskID, @RequestParam("type") String type){
         try {
-            taskService.taskKillOrDelete(taskID);
+            if(type.equals("setKilled"))
+                taskService.killTaskByID(taskID);
+            else if (type.equals("delete"))
+                taskService.deleteTaskByID(taskID);
             return new ResponseEntity<String>(taskID + " was deleted", HttpStatus.OK);
         } catch (Exception e){
-            return new ResponseEntity<String>(e.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<Exception>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -14,9 +16,10 @@ import java.util.concurrent.*;
  */
 @Service
 public class TaskService implements Listener {
-
-    private ExecutorService executor = Executors.newCachedThreadPool();
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
+
+    private final ExecutorService executor;
+    private final Map<Task, Future<String>> taskFutureHashMap;
 
     @Autowired
     private TaskRepository taskRepository;
@@ -25,9 +28,13 @@ public class TaskService implements Listener {
     private JavaScriptServiceFactory javaScriptServiceFactory;
 
     public TaskService() {
+        executor = Executors.newCachedThreadPool();
+        taskFutureHashMap = new ConcurrentHashMap<Task, Future<String>>();
     }
 
     public TaskService(TaskRepository taskRepository, JavaScriptServiceFactory javaScriptServiceFactory) {
+        this();
+
         this.taskRepository = taskRepository;
         this.javaScriptServiceFactory = javaScriptServiceFactory;
     }
@@ -40,46 +47,21 @@ public class TaskService implements Listener {
 
     public void executeTask(UUID id) {
         Task task = taskRepository.load(id);
-
         task.setScriptStatus(ScriptStatus.RUNNING);
         taskRepository.store(task);
-
         javaScriptServiceFactory.createJavaScriptService(task, this);
     }
 
-    public void allTasksKillOrDelete(String type){
-        if (type.equals("kill")){
-            killAllTasks();
-        }
-        if (type.equals("delete")){
-            deleteAllTasks();
-        }
-    }
-
-    public void taskKillOrDelete(UUID uuid){
-        Task task = taskRepository.load(uuid);
-        switch (task.getScriptStatus()){
-            case WAITING: killTaskByID(uuid);
-                break;
-            case RUNNING: killTaskByID(uuid);
-                break;
-            case COMPLETED: deleteTaskByID(uuid);
-                break;
-            case ERROR: deleteTaskByID(uuid);
-                break;
-            case TERMINATED: deleteTaskByID(uuid);
-                break;
-            case KILLED: deleteTaskByID(uuid);
-                break;
-        }
-    }
-
     public void killTaskByID(UUID uuid){
-        taskRepository.kill(uuid);
+        taskFutureHashMap.get(taskRepository.load(uuid)).cancel(true);
+        taskRepository.setKilled(uuid);
     }
 
     public void killAllTasks(){
-        taskRepository.killAll();
+        for (Future<String> future : taskFutureHashMap.values()) {
+            future.cancel(true);
+        }
+        taskRepository.setAllKilled();
     }
 
     public void deleteTaskByID(UUID uuid){
@@ -96,6 +78,11 @@ public class TaskService implements Listener {
 
     public Collection<Task> getTasks() {
         return taskRepository.loadAll();
+    }
+
+    @Override
+    public void onStart(Task task, Future<String> future) {
+        taskFutureHashMap.put(task, future);
     }
 
     @Override

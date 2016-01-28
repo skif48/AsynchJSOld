@@ -6,11 +6,8 @@ import hello.*;
 public class JavaScriptServiceFactoryStub implements JavaScriptServiceFactory {
     @Override
     public void createJavaScriptService(final Task task, final Listener listener) {
-
-                task.setConsoleOutput("hello");
-                task.setScriptStatus(ScriptStatus.COMPLETED);
-                listener.onComplete(task);
-
-        }
-
+        task.setConsoleOutput("hello");
+        task.setScriptStatus(ScriptStatus.COMPLETED);
+        listener.onComplete(task);
+    }
 }

@@ -28,19 +28,14 @@ public class TaskRepository {
         return new ArrayList<Task>(repository.values());
     }
 
-    /*TODO
-    * set real kill
-    * */
-    public synchronized void kill(UUID uuid){
+    public synchronized void setKilled(UUID uuid){
         Task task = repository.get(uuid);
-        if(task.getScriptStatus() == ScriptStatus.RUNNING) {
-            task.setScriptStatus(ScriptStatus.KILLED);
-        }
+        task.setScriptStatus(ScriptStatus.KILLED);
     }
 
-    public synchronized void killAll(){
+    public synchronized void setAllKilled(){
         for (Task task : loadAll()) {
-            kill(task.getId());
+            setKilled(task.getId());
         }
     }
 

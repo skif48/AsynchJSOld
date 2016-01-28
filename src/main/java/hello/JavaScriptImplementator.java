@@ -1,7 +1,9 @@
 package hello;
 
+import javax.script.Compilable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.concurrent.Callable;
@@ -10,6 +12,7 @@ import java.util.concurrent.Callable;
  * Created by Vladyslav Usenko on 16.01.2016.
  */
 public class JavaScriptImplementator implements Callable<String> {
+    public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
     private String javascript;
     private Task task;
 
@@ -20,16 +23,22 @@ public class JavaScriptImplementator implements Callable<String> {
 
     @Override
     public String call() throws Exception {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+        ScriptEngine engine = getScriptEngine();
         StringWriter sw = new StringWriter();
-        String consoleOutput;
         engine.getContext().setWriter(sw);
-        try {
-            engine.eval(new StringReader(javascript));
-            consoleOutput = sw.toString();
-        } catch (Exception e) {
-            consoleOutput = "Error during interpretation of JS code";
-        }
-        return consoleOutput;
+        engine.eval(new StringReader(javascript));
+        return sw.toString();
     }
+
+    public static void preCompileJS(String javascript) throws ScriptException {
+        ScriptEngine engine = getScriptEngine();
+        Compilable compEngine = (Compilable) engine;
+        compEngine.compile(javascript);
+    }
+
+    private static ScriptEngine getScriptEngine() {
+        return SCRIPT_ENGINE_MANAGER.getEngineByName("nashorn");
+    }
+
+
 }

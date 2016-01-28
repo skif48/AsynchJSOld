@@ -1,5 +1,8 @@
 package hello;
 
+import org.apache.commons.logging.LogFactory;
+import sun.rmi.runtime.Log;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +15,8 @@ public class JavaScriptService implements Runnable {
     private final Task task;
     private final Listener listener;
     private final ExecutorService executorService;
+    private static final org.apache.commons.logging.Log LOGGER = LogFactory.getLog(JavaScriptService.class);
+    private Future<String> future;
 
     public JavaScriptService(Task task, Listener listener, ExecutorService executorService) {
         this.task = task;
@@ -22,7 +27,9 @@ public class JavaScriptService implements Runnable {
     @Override
     public void run() {
         try {
-            Future<String> future = executorService.submit(new JavaScriptImplementator(task));
+            LOGGER.info("javascriptservice run entered");
+            future = executorService.submit(new JavaScriptImplementator(task));
+            listener.onStart(task, future);
             String consoleOutput = future.get(30, TimeUnit.SECONDS);
             task.setConsoleOutput(consoleOutput);
             task.setScriptStatus(ScriptStatus.COMPLETED);
@@ -30,11 +37,19 @@ public class JavaScriptService implements Runnable {
             task.setConsoleOutput("time out error");
             task.setScriptStatus(ScriptStatus.TERMINATED);
         } catch (Exception e) {
-            //LOGGER.error("Unexpected error", e);
             task.setConsoleOutput("server error");
             task.setScriptStatus(ScriptStatus.ERROR);
         }
 
+        LOGGER.info("is future empty: " + (future == null));
         listener.onComplete(task);
+    }
+
+    public Task getTask(){
+        return this.task;
+    }
+
+    public Future<String> getFuture(){
+        return this.future;
     }
 }
