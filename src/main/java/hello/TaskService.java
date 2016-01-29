@@ -52,7 +52,8 @@ public class TaskService implements Listener {
     }
 
     public void killTaskByID(UUID uuid) {
-        taskFutureHashMap.get(taskRepository.load(uuid)).cancel(true);
+        Future<TransferData> future = taskFutureHashMap.get(taskRepository.load(uuid));
+        future.cancel(true);
         taskRepository.setKilled(uuid);
     }
 

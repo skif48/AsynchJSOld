@@ -34,7 +34,6 @@ public class SampleController {
     ResponseEntity<Collection<Task>> getTaskList() {
         Collection<Task> list = taskService.getTasks();
         ResponseEntity<Collection<Task>> responseEntity = new ResponseEntity<Collection<Task>>(list, HttpStatus.OK);
-
         return responseEntity;
     }
 
@@ -86,7 +85,7 @@ public class SampleController {
     @ResponseBody
     ResponseEntity deleteOrKillByID(@PathVariable("taskID") UUID taskID, @RequestParam("type") String type) {
         try {
-            if (type.equals("setKilled"))
+            if (type.equals("kill"))
                 taskService.killTaskByID(taskID);
             else if (type.equals("delete"))
                 taskService.deleteTaskByID(taskID);
