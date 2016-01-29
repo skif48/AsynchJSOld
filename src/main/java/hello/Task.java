@@ -10,8 +10,10 @@ public class Task {
     private final UUID id;
     private final String code;
 
+    private boolean isConsoleOutputOK;
     private ScriptStatus scriptStatus;
     private String consoleOutput;
+    private String exception;
 
     public Task(String code) {
         this.id = UUID.randomUUID();
@@ -24,6 +26,22 @@ public class Task {
         this.code = task.code;
         this.scriptStatus = task.scriptStatus;
         this.consoleOutput = task.consoleOutput;
+    }
+
+    public boolean isConsoleOutputOK() {
+        return isConsoleOutputOK;
+    }
+
+    public void setConsoleOutputOK(boolean consoleOutputOK) {
+        isConsoleOutputOK = consoleOutputOK;
+    }
+
+    public String getException() {
+        return exception;
+    }
+
+    public void setException(String exception) {
+        this.exception = exception;
     }
 
     public UUID getId() {
@@ -70,6 +88,5 @@ public class Task {
         if (code != null ? !code.equals(task.code) : task.code != null) return false;
         if (scriptStatus != task.scriptStatus) return false;
         return consoleOutput != null ? consoleOutput.equals(task.consoleOutput) : task.consoleOutput == null;
-
     }
 }

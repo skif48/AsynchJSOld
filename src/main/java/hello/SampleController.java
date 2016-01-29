@@ -34,6 +34,7 @@ public class SampleController {
     ResponseEntity<Collection<Task>> getTaskList() {
         Collection<Task> list = taskService.getTasks();
         ResponseEntity<Collection<Task>> responseEntity = new ResponseEntity<Collection<Task>>(list, HttpStatus.OK);
+
         return responseEntity;
     }
 
@@ -46,7 +47,7 @@ public class SampleController {
 
         Task task = taskService.getTask(UUID.fromString(taskID));
 
-        if(task == null) {
+        if (task == null) {
             return new ResponseEntity<String>("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
@@ -55,10 +56,10 @@ public class SampleController {
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    ResponseEntity<String> executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout){
+    ResponseEntity executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout) {
         try {
             JavaScriptImplementator.preCompileJS(javascript);
-        } catch (ScriptException e){
+        } catch (ScriptException e) {
             return new ResponseEntity<String>(e.toString(), HttpStatus.BAD_REQUEST);
         }
 
@@ -69,11 +70,11 @@ public class SampleController {
 
     @RequestMapping(value = "/task/all", method = RequestMethod.DELETE)
     @ResponseBody
-    ResponseEntity deleteOrKillAll(@RequestParam("type") String type){
+    ResponseEntity deleteOrKillAll(@RequestParam("type") String type) {
         try {
-            if(type.equals("kill"))
+            if (type.equals("kill"))
                 taskService.killAllTasks();
-            else if(type.equals("delete"))
+            else if (type.equals("delete"))
                 taskService.deleteAllTasks();
             return new ResponseEntity<String>("all running/waiting tasks were deleted successfully", HttpStatus.OK);
         } catch (Exception e) {
@@ -83,14 +84,14 @@ public class SampleController {
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
     @ResponseBody
-    ResponseEntity deleteOrKillByID(@PathVariable("taskID") UUID taskID, @RequestParam("type") String type){
+    ResponseEntity deleteOrKillByID(@PathVariable("taskID") UUID taskID, @RequestParam("type") String type) {
         try {
-            if(type.equals("setKilled"))
+            if (type.equals("setKilled"))
                 taskService.killTaskByID(taskID);
             else if (type.equals("delete"))
                 taskService.deleteTaskByID(taskID);
             return new ResponseEntity<String>(taskID + " was deleted", HttpStatus.OK);
-        } catch (Exception e){
+        } catch (Exception e) {
             return new ResponseEntity<Exception>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

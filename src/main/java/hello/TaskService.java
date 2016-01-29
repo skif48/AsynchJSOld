@@ -18,7 +18,7 @@ public class TaskService implements Listener {
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
 
     private final ExecutorService executor;
-    private final Map<Task, Future<String>> taskFutureHashMap;
+    private final Map<Task, Future<TransferData>> taskFutureHashMap;
 
     @Autowired
     private TaskRepository taskRepository;
@@ -28,7 +28,7 @@ public class TaskService implements Listener {
 
     public TaskService() {
         executor = Executors.newCachedThreadPool();
-        taskFutureHashMap = new ConcurrentHashMap<Task, Future<String>>();
+        taskFutureHashMap = new ConcurrentHashMap<Task, Future<TransferData>>();
     }
 
     public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
@@ -51,27 +51,27 @@ public class TaskService implements Listener {
         javaScriptThreadRunnerFactory.createJavaScriptService(task, this);
     }
 
-    public void killTaskByID(UUID uuid){
+    public void killTaskByID(UUID uuid) {
         taskFutureHashMap.get(taskRepository.load(uuid)).cancel(true);
         taskRepository.setKilled(uuid);
     }
 
-    public void killAllTasks(){
-        for (Future<String> future : taskFutureHashMap.values()) {
+    public void killAllTasks() {
+        for (Future<TransferData> future : taskFutureHashMap.values()) {
             future.cancel(true);
         }
         taskRepository.setAllKilled();
     }
 
-    public void deleteTaskByID(UUID uuid){
+    public void deleteTaskByID(UUID uuid) {
         taskRepository.delete(uuid);
     }
 
-    public void deleteAllTasks(){
+    public void deleteAllTasks() {
         taskRepository.deleteAll();
     }
 
-    public Task getTask(UUID uuid){
+    public Task getTask(UUID uuid) {
         return taskRepository.load(uuid);
     }
 
@@ -80,16 +80,13 @@ public class TaskService implements Listener {
     }
 
     @Override
-    public void onStart(Task task, Future<String> future) {
+    public void onStart(Task task, Future<TransferData> future) {
         taskFutureHashMap.put(task, future);
     }
 
     @Override
     public void onComplete(Task task) {
-        ScriptStatus currentScriptStatus = taskRepository.load(task.getId()).getScriptStatus();
-        if(currentScriptStatus != ScriptStatus.KILLED) {
-            taskRepository.store(task);
-            LOGGER.info("Completed " + task.getId());
-        }
+        taskRepository.store(task);
+        LOGGER.info("Completed " + task.getId());
     }
 }

@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
  */
-public class JavaScriptImplementator implements Callable<String> {
+public class JavaScriptImplementator implements Callable<TransferData> {
     public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
     private String javascript;
     private Task task;
@@ -22,12 +22,20 @@ public class JavaScriptImplementator implements Callable<String> {
     }
 
     @Override
-    public String call() throws Exception {
-        ScriptEngine engine = getScriptEngine();
-        StringWriter sw = new StringWriter();
-        engine.getContext().setWriter(sw);
-        engine.eval(new StringReader(javascript));
-        return sw.toString();
+    public TransferData call() throws Exception {
+        TransferData transferData = new TransferData();
+        try {
+            ScriptEngine engine = getScriptEngine();
+            StringWriter sw = new StringWriter();
+            engine.getContext().setWriter(sw);
+            engine.eval(new StringReader(javascript));
+            transferData = new TransferData(true, sw.toString(), null);
+        } catch (Exception e) {
+            transferData.setResponseOK(false);
+            transferData.setException(e);
+        }
+
+        return transferData;
     }
 
     public static void preCompileJS(String javascript) throws ScriptException {

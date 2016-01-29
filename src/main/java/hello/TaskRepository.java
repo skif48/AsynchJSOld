@@ -30,7 +30,15 @@ public class TaskRepository {
 
     public synchronized void setKilled(UUID uuid){
         Task task = repository.get(uuid);
-        task.setScriptStatus(ScriptStatus.KILLED);
+        switch (task.getScriptStatus()){
+            case WAITING:
+                task.setScriptStatus(ScriptStatus.KILLED);
+                break;
+            case RUNNING:
+                task.setScriptStatus(ScriptStatus.KILLED);
+                break;
+            default: break;
+        }
     }
 
     public synchronized void setAllKilled(){
