@@ -20,7 +20,7 @@ public class AppConfiguration {
     }
 
     @Bean
-    public JavaScriptServiceFactory executableFactory(){
-        return new JavaScriptServiceFactoryImpl();
+    public JavaScriptThreadRunnerFactory executableFactory(){
+        return new JavaScriptThreadRunnerFactoryImplementation();
     }
 }

@@ -39,6 +39,4 @@ public class JavaScriptImplementator implements Callable<String> {
     private static ScriptEngine getScriptEngine() {
         return SCRIPT_ENGINE_MANAGER.getEngineByName("nashorn");
     }
-
-
 }

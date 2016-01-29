@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -25,18 +24,18 @@ public class TaskService implements Listener {
     private TaskRepository taskRepository;
 
     @Autowired
-    private JavaScriptServiceFactory javaScriptServiceFactory;
+    private JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory;
 
     public TaskService() {
         executor = Executors.newCachedThreadPool();
         taskFutureHashMap = new ConcurrentHashMap<Task, Future<String>>();
     }
 
-    public TaskService(TaskRepository taskRepository, JavaScriptServiceFactory javaScriptServiceFactory) {
+    public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
         this();
 
         this.taskRepository = taskRepository;
-        this.javaScriptServiceFactory = javaScriptServiceFactory;
+        this.javaScriptThreadRunnerFactory = javaScriptThreadRunnerFactory;
     }
 
     public Task createTask(String code) {
@@ -49,7 +48,7 @@ public class TaskService implements Listener {
         Task task = taskRepository.load(id);
         task.setScriptStatus(ScriptStatus.RUNNING);
         taskRepository.store(task);
-        javaScriptServiceFactory.createJavaScriptService(task, this);
+        javaScriptThreadRunnerFactory.createJavaScriptService(task, this);
     }
 
     public void killTaskByID(UUID uuid){

@@ -9,15 +9,15 @@ import org.junit.Test;
 public class HelloTest {
 
     TaskRepository taskRepository;
-    JavaScriptServiceFactory javaScriptServiceFactory;
+    JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory;
     TaskService taskService;
     Task task;
 
     @Before
     public void setUp() throws Exception {
         taskRepository = new TaskRepository();
-        javaScriptServiceFactory = new JavaScriptServiceFactoryStub();
-        taskService = new TaskService(taskRepository, javaScriptServiceFactory);
+        javaScriptThreadRunnerFactory = new JavaScriptThreadRunnerFactoryStub();
+        taskService = new TaskService(taskRepository, javaScriptThreadRunnerFactory);
         task = taskService.createTask("print(1);");
     }
 
