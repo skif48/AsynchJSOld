@@ -63,7 +63,7 @@ public class SampleController {
         }
 
         Task task = taskService.createTask(javascript);
-        taskService.executeTask(task.getId());
+        taskService.putTaskInQueueForExecution(task.getId());
         return new ResponseEntity<String>(task.getId().toString(), HttpStatus.OK);
     }
 
