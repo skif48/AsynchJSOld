@@ -18,7 +18,7 @@ public class TaskService implements Listener {
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
 
     private final ExecutorService executor;
-    private final Map<Task, Future<TransferData>> taskFutureHashMap;
+    private final Map<UUID, Future<TransferData>> taskFutureHashMap;
 
     @Autowired
     private TaskRepository taskRepository;
@@ -28,7 +28,7 @@ public class TaskService implements Listener {
 
     public TaskService() {
         executor = Executors.newCachedThreadPool();
-        taskFutureHashMap = new ConcurrentHashMap<Task, Future<TransferData>>();
+        taskFutureHashMap = new ConcurrentHashMap<UUID, Future<TransferData>>();
     }
 
     public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
@@ -52,7 +52,7 @@ public class TaskService implements Listener {
     }
 
     public void killTaskByID(UUID uuid) {
-        Future<TransferData> future = taskFutureHashMap.get(taskRepository.load(uuid));
+        Future<TransferData> future = taskFutureHashMap.get(uuid);
         future.cancel(true);
         taskRepository.setKilled(uuid);
     }
@@ -82,7 +82,7 @@ public class TaskService implements Listener {
 
     @Override
     public void onStart(Task task, Future<TransferData> future) {
-        taskFutureHashMap.put(task, future);
+        taskFutureHashMap.put(task.getId(), future);
     }
 
     @Override
