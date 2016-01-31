@@ -1,5 +1,8 @@
 package hello;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import javax.script.Compilable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -12,6 +15,7 @@ import java.util.concurrent.Callable;
  * Created by Vladyslav Usenko on 16.01.2016.
  */
 public class JavaScriptImplementator implements Callable<TransferData> {
+    private static final Log LOGGER = LogFactory.getLog(JavaScriptImplementator.class);
     public static final ScriptEngineManager SCRIPT_ENGINE_MANAGER = new ScriptEngineManager();
     private String javascript;
     private Task task;
@@ -25,6 +29,7 @@ public class JavaScriptImplementator implements Callable<TransferData> {
     public TransferData call() throws Exception {
         TransferData transferData = new TransferData();
         try {
+            LOGGER.info("Implementator started with task " + task.getId());
             ScriptEngine engine = getScriptEngine();
             StringWriter sw = new StringWriter();
             engine.getContext().setWriter(sw);
@@ -34,7 +39,7 @@ public class JavaScriptImplementator implements Callable<TransferData> {
             transferData.setResponseOK(false);
             transferData.setException(e);
         }
-
+        LOGGER.info("Implementator finished with task " + task.getId());
         return transferData;
     }
 

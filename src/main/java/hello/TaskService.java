@@ -2,13 +2,11 @@ package hello;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -52,6 +50,7 @@ public class TaskService implements Listener {
 
     public void putTaskInQueueForExecution(UUID id){
         this.taskQueue.add(taskRepository.load(id));
+        LOGGER.info("Current queue: " + this.taskQueue.toString());
     }
 
     public void executeTask(UUID id) {

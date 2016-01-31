@@ -9,11 +9,10 @@ import java.util.concurrent.*;
 /**
  * Created by Vladyslav Usenko on 30.01.2016.
  */
-public class JavaScriptThreadsListener implements Runnable {
+public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExceptionHandler {
     private static final Log LOGGER = LogFactory.getLog(JavaScriptThreadsListener.class);
 
-
-    private final List<JavaScriptImplementator> implementators = new ArrayList<JavaScriptImplementator>();
+    private final  List<JavaScriptImplementator> implementators = new ArrayList<JavaScriptImplementator>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final List<Future<TransferData>> runningFutures = new ArrayList<Future<TransferData>>();
     private final Map<Future<TransferData>, Task> map = new ConcurrentHashMap<Future<TransferData>, Task>();
@@ -28,46 +27,94 @@ public class JavaScriptThreadsListener implements Runnable {
         this.taskQueue = taskQueue;
     }
 
-    public void setListener(Listener listener) {
-        this.listener = listener;
-    }
-
     @Override
     public void run() {
-        LOGGER.info("JSThreadListener says hi!");
-        LOGGER.info(taskQueue.toString());
-        Task task;
-        while (true) {
-            TransferData transferData = new TransferData();
-            task = null;
-            try {
-                if (!taskQueue.isEmpty()) {
-                    task = taskQueue.take();
-                    JavaScriptImplementator implementator = new JavaScriptImplementator(task);
-                    implementators.add(implementator);
-                    Future<TransferData> future = executorService.submit(implementator);
-                    transferData = future.get();
-                    runningFutures.add(future);
-                    map.put(future, task);
-                    listener.onStart(task.getId(), future);
-                }
+        try {
+            LOGGER.info("JSThreadsListener began to run");
+            while (true) {
+                LOGGER.info("Elements in taskQueue from the JSThreadsListener POV: " + taskQueue.toString());
+                if (!taskQueue.isEmpty())
+                    executeTask();
+                checkRunningFuturesForDoneAndManageTheDataBetweenThem();
+                deleteDoneFutures();
                 Thread.sleep(500);
-            } catch (Exception e) {
-                task.setScriptStatus(ScriptStatus.ERROR);
-                task.setException(e.toString());
-                listener.onComplete(task);
             }
+        } catch (Exception e) {
+            LOGGER.error("GLOBAL ERROR IN JSTHREADSLISTENER", e);
+        }
+    }
 
+    /**
+     * method is called when new task appeared in taskQueue. It submits task in executor service,
+     * puts its future in the list of running futures and in the map as a key for corresponding task,
+     * sends to the listener the future and uuid of corresponding task
+     */
+    public void executeTask(){
+        Task takenTask;
+        try {
+            takenTask = taskQueue.take();
+            Future<TransferData> future = executorService.submit(new JavaScriptImplementator(takenTask));
+            takenTask.setScriptStatus(ScriptStatus.RUNNING);
+            runningFutures.add(future);
+            map.put(future, takenTask);
+            listener.onStart(takenTask.getId(), future);
+        } catch (InterruptedException e) {
+            LOGGER.error("Exception has been thrown while taking task from the queue", e);
+        }
+    }
+
+    /**
+     * Checks list of running futures for futures that are done. Fills data in the corresponding task
+     * for the future. Data is obtained with TransferData. Sends to the listener final task.
+     */
+    public void checkRunningFuturesForDoneAndManageTheDataBetweenThem(){
+        Task taskFromMap = null;
+        try {
             for (Future<TransferData> future : runningFutures) {
-                if(future.isDone()){
-                    if(!(transferData.getException() == null))
-                        task.setException(transferData.getException().toString());
-                    if(!(transferData.getConsoleOutput().equals("")))
-                        task.setConsoleOutput(transferData.getConsoleOutput());
-                    task.setScriptStatus(ScriptStatus.COMPLETED);
-                    listener.onComplete(task);
+                if (future.isDone()) {
+                    TransferData transferData = null;
+                    try {
+                        transferData = future.get();
+                    } catch (CancellationException e){
+                        break;
+                    }
+                    taskFromMap = map.get(future);
+
+                    if (transferData.isResponseOK())
+                        taskFromMap.setConsoleOutput(transferData.getConsoleOutput());
+                    else
+                        taskFromMap.setException(transferData.getException().toString());
+
+                    taskFromMap.setScriptStatus(ScriptStatus.COMPLETED);
+                    listener.onComplete(taskFromMap);
+                }
+            }
+        } catch (InterruptedException e) {
+            LOGGER.error("getting transfer data from future for task with id " + taskFromMap.getId() + " was interrupted");
+        } catch (ExecutionException e) {
+            LOGGER.error(e.getStackTrace());
+        }
+    }
+
+    /**
+     * Goes through the list of running futures and deletes futures thar are done
+     */
+    public void deleteDoneFutures(){
+        Iterator<Future<TransferData>> i = runningFutures.iterator();
+        while (i.hasNext()) {
+            Future<TransferData> f = i.next();
+            if (f.isDone()) { //// FIXME: 31.01.2016 f can be done but not yet checked in checkRunningFuturesForDoneAndManageTheDataBetweenThem
+                try {
+                    i.remove();
+                } catch (Exception e) {
+                    LOGGER.error("Exception while removing done future from list of running futures", e);
                 }
             }
         }
+    }
+
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        LOGGER.error("Uncaught exception", e);
     }
 }

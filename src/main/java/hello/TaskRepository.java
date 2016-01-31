@@ -22,7 +22,7 @@ public class TaskRepository {
     }
 
     public synchronized Task load(UUID id){
-        return new Task(repository.get(id));
+        return repository.get(id);
     }
 
     public synchronized Collection<Task> loadAll() {
