@@ -97,6 +97,5 @@ public class TaskService implements Listener {
     @Override
     public void onComplete(Task task) {
         taskRepository.store(task);
-        LOGGER.info("Completed " + task.getId());
     }
 }

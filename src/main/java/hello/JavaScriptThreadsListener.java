@@ -103,7 +103,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
         Iterator<Future<TransferData>> i = runningFutures.iterator();
         while (i.hasNext()) {
             Future<TransferData> f = i.next();
-            if (f.isDone()) { //// FIXME: 31.01.2016 f can be done but not yet checked in checkRunningFuturesForDoneAndManageTheDataBetweenThem
+            if (map.get(f).getScriptStatus() == ScriptStatus.COMPLETED) {
                 try {
                     i.remove();
                 } catch (Exception e) {
