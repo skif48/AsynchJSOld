@@ -5,11 +5,8 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -18,12 +15,28 @@ import java.util.concurrent.*;
  */
 @Service
 public class TaskService implements Listener {
-
-    private ExecutorService executor = Executors.newCachedThreadPool();
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
 
+    private final ExecutorService executor;
+    private final Map<UUID, Future<TransferData>> taskFutureHashMap;
+
     @Autowired
-    public TaskRepository taskRepository;
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory;
+
+    public TaskService() {
+        executor = Executors.newCachedThreadPool();
+        taskFutureHashMap = new ConcurrentHashMap<UUID, Future<TransferData>>();
+    }
+
+    public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
+        this();
+
+        this.taskRepository = taskRepository;
+        this.javaScriptThreadRunnerFactory = javaScriptThreadRunnerFactory;
+    }
 
     public Task createTask(String code) {
         Task task = new Task(code);
@@ -31,44 +44,45 @@ public class TaskService implements Listener {
         return task;
     }
 
-    public static String executeJS(String js) {
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-        StringWriter sw = new StringWriter();
-        String consoleOutput;
-        engine.getContext().setWriter(sw);
-        try {
-            engine.eval(new StringReader(js));
-            consoleOutput = sw.toString();
-        } catch (Exception e) {
-            consoleOutput = "Error during interpretation of JS code";
-        }
-
-        return consoleOutput;
-    }
-
     public void executeTask(UUID id) {
         Task task = taskRepository.load(id);
-
-        task.setStatus(Status.RUNNING);
+        task.setScriptStatus(ScriptStatus.RUNNING);
         taskRepository.store(task);
-
-        Executable executable = new Executable(task, this, executor);
-        executor.submit(executable);
+        javaScriptThreadRunnerFactory.createJavaScriptService(task, this);
     }
 
-    public void deleteTaskByID(UUID uuid){
+    public void killTaskByID(UUID uuid) {
+        Future<TransferData> future = taskFutureHashMap.get(uuid);
+        future.cancel(true);
+        taskRepository.setKilled(uuid);
+    }
+
+    public void killAllTasks() {
+        for (Future<TransferData> future : taskFutureHashMap.values()) {
+            future.cancel(true);
+        }
+        taskRepository.setAllKilled();
+    }
+
+    public void deleteTaskByID(UUID uuid) {
         taskRepository.delete(uuid);
     }
 
-    public void deleteAllTasks(){
-        for (Task t : taskRepository.loadAll()) {
-            if(t.getStatus() == Status.RUNNING)
-                deleteTaskByID(t.getId());
-        }
+    public void deleteAllTasks() {
+        taskRepository.deleteAll();
+    }
+
+    public Task getTask(UUID uuid) {
+        return taskRepository.load(uuid);
     }
 
     public Collection<Task> getTasks() {
         return taskRepository.loadAll();
+    }
+
+    @Override
+    public void onStart(Task task, Future<TransferData> future) {
+        taskFutureHashMap.put(task.getId(), future);
     }
 
     @Override

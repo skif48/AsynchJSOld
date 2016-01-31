@@ -4,9 +4,12 @@ import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.*;
 import org.springframework.web.bind.annotation.*;
+
+import javax.script.ScriptException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,58 +34,69 @@ public class SampleController {
 
     @RequestMapping(value = "/task", method = RequestMethod.GET)
     @ResponseBody
-    Object getTaskList() {
+    ResponseEntity<Collection<Task>> getTaskList() {
         Collection<Task> list = taskService.getTasks();
-        Map<String, String> map = new HashMap<String, String>();
-        for (Task t : list) {
-            map.put("task", t.toString());
-        }
-        return list;
+
+        ResponseEntity<Collection<Task>> responseEntity = new ResponseEntity<Collection<Task>>(list, HttpStatus.OK);
+        return responseEntity;
+
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.GET)
     @ResponseBody
-    Object getTaskByID(@PathVariable("taskID") String taskID) {
+    ResponseEntity getTaskByID(@PathVariable("taskID") String taskID) {
         if (!Task.isValidTaskId(taskID)) {
-            return "invalid task id";
+            return new ResponseEntity<String>("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
-        Task task = taskService.taskRepository.load(UUID.fromString(taskID));
+        Task task = taskService.getTask(UUID.fromString(taskID));
 
-        if(task == null) {
-            return "invalid task id";
+        if (task == null) {
+            return new ResponseEntity<String>("Invalid task UUID", HttpStatus.BAD_REQUEST);
         }
 
-        return task;
+        return new ResponseEntity<Task>(task, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     @ResponseBody
-    Object executeTask(@RequestBody String javascript){
+    ResponseEntity executeTask(@RequestBody String javascript, @RequestParam("timeout") Integer timeout) {
+        try {
+            JavaScriptImplementator.preCompileJS(javascript);
+        } catch (ScriptException e) {
+            return new ResponseEntity<String>(e.toString(), HttpStatus.BAD_REQUEST);
+        }
+
         Task task = taskService.createTask(javascript);
         taskService.executeTask(task.getId());
-        return task.getId();
+        return new ResponseEntity<String>(task.getId().toString(), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/task", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/task/all", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteAll(){
+    ResponseEntity deleteOrKillAll(@RequestParam("type") String type) {
         try {
-            taskService.deleteAllTasks();
-            return "all running tasks were deleted successfully";
+            if (type.equals("kill"))
+                taskService.killAllTasks();
+            else if (type.equals("delete"))
+                taskService.deleteAllTasks();
+            return new ResponseEntity<String>("all running/waiting tasks were deleted successfully", HttpStatus.OK);
         } catch (Exception e) {
-            return "deleting currently running tasks was failed";
+            return new ResponseEntity<Exception>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.DELETE)
     @ResponseBody
-    String deleteByID(@PathVariable("taskID") String taskID){
+    ResponseEntity deleteOrKillByID(@PathVariable("taskID") UUID taskID, @RequestParam("type") String type) {
         try {
-            taskService.deleteTaskByID(UUID.fromString(taskID));
-            return taskID + " was deleted";
-        } catch (Exception e){
-            return "deleting task " + taskID + " failed";
+            if (type.equals("kill"))
+                taskService.killTaskByID(taskID);
+            else if (type.equals("delete"))
+                taskService.deleteTaskByID(taskID);
+            return new ResponseEntity<String>(taskID + " was deleted", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<Exception>(e, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

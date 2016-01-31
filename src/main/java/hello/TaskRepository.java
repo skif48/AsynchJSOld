@@ -3,6 +3,7 @@ package hello;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
@@ -13,7 +14,7 @@ public class TaskRepository {
     private final Map<UUID, Task> repository;
 
     public TaskRepository() {
-        this.repository = new HashMap<UUID, Task>();
+        this.repository = new ConcurrentHashMap<UUID, Task>();
     }
 
     public synchronized void store(Task task){
@@ -25,14 +26,33 @@ public class TaskRepository {
     }
 
     public synchronized Collection<Task> loadAll() {
-        Collection<Task> result = new ArrayList<Task>();
-        for (Task task : repository.values()) {
-            result.add(new Task(task));
+        return new ArrayList<Task>(repository.values());
+    }
+
+    public synchronized void setKilled(UUID uuid){
+        Task task = repository.get(uuid);
+        switch (task.getScriptStatus()){
+            case WAITING:
+                task.setScriptStatus(ScriptStatus.KILLED);
+                break;
+            case RUNNING:
+                task.setScriptStatus(ScriptStatus.KILLED);
+                break;
+            default: break;
         }
-        return result;
+    }
+
+    public synchronized void setAllKilled(){
+        for (Task task : loadAll()) {
+            setKilled(task.getId());
+        }
     }
 
     public synchronized void delete(UUID uuid){
-        repository.get(uuid).setStatus(Status.DELETED);
+        repository.remove(uuid);
+    }
+
+    public synchronized void deleteAll(){
+        repository.clear();
     }
 }
