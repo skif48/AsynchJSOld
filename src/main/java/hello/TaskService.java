@@ -2,12 +2,11 @@ package hello;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -19,6 +18,8 @@ public class TaskService implements Listener {
 
     private final ExecutorService executor;
     private final Map<UUID, Future<TransferData>> taskFutureHashMap;
+    private final LinkedBlockingQueue<Task> taskQueue;
+    private final JavaScriptThreadsListener javaScriptThreadsListener;
 
     @Autowired
     private TaskRepository taskRepository;
@@ -29,6 +30,9 @@ public class TaskService implements Listener {
     public TaskService() {
         executor = Executors.newCachedThreadPool();
         taskFutureHashMap = new ConcurrentHashMap<UUID, Future<TransferData>>();
+        taskQueue = new LinkedBlockingQueue<Task>();
+        javaScriptThreadsListener = new JavaScriptThreadsListener(this, taskQueue);
+        executor.submit(javaScriptThreadsListener);
     }
 
     public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
@@ -42,6 +46,11 @@ public class TaskService implements Listener {
         Task task = new Task(code);
         taskRepository.store(task);
         return task;
+    }
+
+    public void putTaskInQueueForExecution(UUID id){
+        this.taskQueue.add(taskRepository.load(id));
+        LOGGER.info("Current queue: " + this.taskQueue.toString());
     }
 
     public void executeTask(UUID id) {
@@ -81,13 +90,12 @@ public class TaskService implements Listener {
     }
 
     @Override
-    public void onStart(Task task, Future<TransferData> future) {
-        taskFutureHashMap.put(task.getId(), future);
+    public void onStart(UUID id, Future<TransferData> future) {
+        taskFutureHashMap.put(id, future);
     }
 
     @Override
     public void onComplete(Task task) {
         taskRepository.store(task);
-        LOGGER.info("Completed " + task.getId());
     }
 }

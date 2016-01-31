@@ -26,7 +26,7 @@ public class JavaScriptThreadRunner implements Runnable {
         try {
             LOGGER.info("javascriptservice run entered");
             future = executorService.submit(new JavaScriptImplementator(task));
-            listener.onStart(task, future);
+            listener.onStart(task.getId(), future);
             transferData = future.get(30, TimeUnit.SECONDS);
             task.setConsoleOutputOK(transferData.isResponseOK());
             task.setConsoleOutput(transferData.getConsoleOutput());

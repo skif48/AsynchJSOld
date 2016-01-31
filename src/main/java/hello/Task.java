@@ -112,4 +112,16 @@ public class Task {
         result = 31 * result + (exception != null ? exception.hashCode() : 0);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", isConsoleOutputOK=" + isConsoleOutputOK +
+                ", scriptStatus=" + scriptStatus +
+                ", consoleOutput='" + consoleOutput + '\'' +
+                ", exception='" + exception + '\'' +
+                '}';
+    }
 }
