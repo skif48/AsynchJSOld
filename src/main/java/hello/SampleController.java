@@ -1,5 +1,6 @@
 package hello;
 
+import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.script.ScriptException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -33,8 +36,10 @@ public class SampleController {
     @ResponseBody
     ResponseEntity<Collection<Task>> getTaskList() {
         Collection<Task> list = taskService.getTasks();
+
         ResponseEntity<Collection<Task>> responseEntity = new ResponseEntity<Collection<Task>>(list, HttpStatus.OK);
         return responseEntity;
+
     }
 
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.GET)

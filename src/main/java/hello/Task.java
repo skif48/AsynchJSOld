@@ -78,6 +78,14 @@ public class Task {
     }
 
     @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", status=" + status +
+                ", consoleOutput='" + consoleOutput + '\'' +
+                '}';
+
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
