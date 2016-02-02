@@ -3,7 +3,7 @@ package hello;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.sql.SQLType;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -13,7 +13,6 @@ import java.util.concurrent.*;
 public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExceptionHandler {
     private static final Log LOGGER = LogFactory.getLog(JavaScriptThreadsListener.class);
 
-    private final  List<JavaScriptImplementator> implementators = new ArrayList<JavaScriptImplementator>();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final List<Future<TransferData>> runningFutures = new ArrayList<Future<TransferData>>();
     private final Map<Future<TransferData>, Task> map = new ConcurrentHashMap<Future<TransferData>, Task>();
@@ -54,6 +53,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
         Task takenTask;
         try {
             takenTask = taskQueue.take();
+            takenTask.setExecutionStartTimeMillis(System.currentTimeMillis());
             Future<TransferData> future = executorService.submit(new JavaScriptImplementator(takenTask));
             takenTask.setScriptStatus(ScriptStatus.RUNNING);
             runningFutures.add(future);
@@ -88,6 +88,18 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
                     taskFromMap.setScriptStatus(ScriptStatus.COMPLETED);
                     taskListener.onComplete(taskFromMap);
                 }
+
+                try {
+                    if ((System.currentTimeMillis() - map.get(future).getExecutionStartTimeMillis()) >= 300000) {
+                        future.cancel(true);
+                        LOGGER.info("Task " + map.get(future).getId() + " terminated successfully");
+                        Task task = map.get(future);
+                        task.setScriptStatus(ScriptStatus.TERMINATED);
+                        taskListener.onComplete(task);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Exception during termination the task " + map.get(future).getId(), e);
+                }
             }
         } catch (InterruptedException e) {
             LOGGER.error("getting transfer data from future for task with id " + taskFromMap.getId() + " was interrupted");
@@ -103,7 +115,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
         Iterator<Future<TransferData>> i = runningFutures.iterator();
         while (i.hasNext()) {
             Future<TransferData> f = i.next();
-            if (map.get(f).getScriptStatus() == ScriptStatus.COMPLETED) {
+            if (map.get(f).getScriptStatus() == ScriptStatus.COMPLETED || map.get(f).getScriptStatus() == ScriptStatus.TERMINATED) {
                 try {
                     i.remove();
                 } catch (Exception e) {

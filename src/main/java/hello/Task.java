@@ -1,5 +1,6 @@
 package hello;
 
+import java.time.LocalTime;
 import java.util.UUID;
 
 /**
@@ -14,6 +15,7 @@ public class Task {
     private ScriptStatus scriptStatus;
     private String consoleOutput;
     private String exception;
+    private long executionStartTimeMillis;
 
     public Task(String code) {
         this.id = UUID.randomUUID();
@@ -77,14 +79,13 @@ public class Task {
         }
     }
 
-    @Override
-    public String toString() {
-        return "Task{" +
-                "id=" + id +
-                ", code='" + code + '\'' +
-                ", status=" + status +
-                ", consoleOutput='" + consoleOutput + '\'' +
-                '}';
+    public long getExecutionStartTimeMillis() {
+        return executionStartTimeMillis;
+    }
+
+    public void setExecutionStartTimeMillis(long executionStartTimeMillis) {
+        this.executionStartTimeMillis = executionStartTimeMillis;
+    }
 
     public boolean equals(Object o) {
         if (this == o) return true;
