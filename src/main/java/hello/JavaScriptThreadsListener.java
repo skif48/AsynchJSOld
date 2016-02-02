@@ -3,6 +3,7 @@ package hello;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.sql.SQLType;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -16,14 +17,14 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final List<Future<TransferData>> runningFutures = new ArrayList<Future<TransferData>>();
     private final Map<Future<TransferData>, Task> map = new ConcurrentHashMap<Future<TransferData>, Task>();
-    private Listener listener;
+    private TaskListener taskListener;
     private LinkedBlockingQueue<Task> taskQueue;
 
     public JavaScriptThreadsListener() {
     }
 
-    public JavaScriptThreadsListener(Listener listener, LinkedBlockingQueue<Task> taskQueue) {
-        this.listener = listener;
+    public JavaScriptThreadsListener(TaskListener taskListener, LinkedBlockingQueue<Task> taskQueue) {
+        this.taskListener = taskListener;
         this.taskQueue = taskQueue;
     }
 
@@ -47,7 +48,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
     /**
      * method is called when new task appeared in taskQueue. It submits task in executor service,
      * puts its future in the list of running futures and in the map as a key for corresponding task,
-     * sends to the listener the future and uuid of corresponding task
+     * sends to the task taskListener the future and uuid of corresponding task
      */
     public void executeTask(){
         Task takenTask;
@@ -57,7 +58,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
             takenTask.setScriptStatus(ScriptStatus.RUNNING);
             runningFutures.add(future);
             map.put(future, takenTask);
-            listener.onStart(takenTask.getId(), future);
+            taskListener.onStart(takenTask.getId(), future);
         } catch (InterruptedException e) {
             LOGGER.error("Exception has been thrown while taking task from the queue", e);
         }
@@ -65,7 +66,7 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
 
     /**
      * Checks list of running futures for futures that are done. Fills data in the corresponding task
-     * for the future. Data is obtained with TransferData. Sends to the listener final task.
+     * for the future. Data is obtained with TransferData. Sends to the task taskListener final task.
      */
     public void checkRunningFuturesForDoneAndManageTheDataBetweenThem(){
         Task taskFromMap = null;
@@ -79,14 +80,13 @@ public class JavaScriptThreadsListener implements Runnable, Thread.UncaughtExcep
                         break;
                     }
                     taskFromMap = map.get(future);
-
                     if (transferData.isResponseOK())
                         taskFromMap.setConsoleOutput(transferData.getConsoleOutput());
                     else
                         taskFromMap.setException(transferData.getException().toString());
 
                     taskFromMap.setScriptStatus(ScriptStatus.COMPLETED);
-                    listener.onComplete(taskFromMap);
+                    taskListener.onComplete(taskFromMap);
                 }
             }
         } catch (InterruptedException e) {

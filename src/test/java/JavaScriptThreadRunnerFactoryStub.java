@@ -5,9 +5,9 @@ import hello.*;
  */
 public class JavaScriptThreadRunnerFactoryStub implements JavaScriptThreadRunnerFactory {
     @Override
-    public void createJavaScriptService(final Task task, final Listener listener) {
+    public void createJavaScriptService(final Task task, final TaskListener taskListener) {
         task.setConsoleOutput("hello");
         task.setScriptStatus(ScriptStatus.COMPLETED);
-        listener.onComplete(task);
+        taskListener.onComplete(task);
     }
 }

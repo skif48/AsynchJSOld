@@ -9,14 +9,14 @@ import java.util.concurrent.*;
  */
 public class JavaScriptThreadRunner implements Runnable {
     private final Task task;
-    private final Listener listener;
+    private final TaskListener taskListener;
     private final ExecutorService executorService;
     private static final org.apache.commons.logging.Log LOGGER = LogFactory.getLog(JavaScriptThreadRunner.class);
     private Future<TransferData> future;
 
-    public JavaScriptThreadRunner(Task task, Listener listener, ExecutorService executorService) {
+    public JavaScriptThreadRunner(Task task, TaskListener taskListener, ExecutorService executorService) {
         this.task = task;
-        this.listener = listener;
+        this.taskListener = taskListener;
         this.executorService = executorService;
     }
 
@@ -26,7 +26,7 @@ public class JavaScriptThreadRunner implements Runnable {
         try {
             LOGGER.info("javascriptservice run entered");
             future = executorService.submit(new JavaScriptImplementator(task));
-            listener.onStart(task.getId(), future);
+            taskListener.onStart(task.getId(), future);
             transferData = future.get(30, TimeUnit.SECONDS);
             task.setConsoleOutputOK(transferData.isResponseOK());
             task.setConsoleOutput(transferData.getConsoleOutput());
@@ -48,7 +48,7 @@ public class JavaScriptThreadRunner implements Runnable {
             task.setConsoleOutput("");
             task.setScriptStatus(ScriptStatus.ERROR);
         }
-        listener.onComplete(task);
+        taskListener.onComplete(task);
     }
 
     public Task getTask(){

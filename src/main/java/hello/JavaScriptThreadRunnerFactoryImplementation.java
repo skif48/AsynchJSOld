@@ -10,7 +10,7 @@ public class JavaScriptThreadRunnerFactoryImplementation implements JavaScriptTh
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Override
-    public void createJavaScriptService(Task task, Listener listener) {
-        executorService.submit(new JavaScriptThreadRunner(task, listener, executorService));
+    public void createJavaScriptService(Task task, TaskListener taskListener) {
+        executorService.submit(new JavaScriptThreadRunner(task, taskListener, executorService));
     }
 }

@@ -2,7 +2,6 @@ package hello;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +12,7 @@ import java.util.concurrent.*;
  * Created by Vladyslav Usenko on 16.01.2016.
  */
 @Service
-public class TaskService implements Listener {
+public class TaskService implements TaskListener {
     private static final Log LOGGER = LogFactory.getLog(TaskService.class);
 
     private final ExecutorService executor;
