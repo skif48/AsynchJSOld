@@ -1,4 +1,10 @@
 import hello.*;
+
+import java.util.concurrent.Executors;
+
+import javax.script.Compilable;
+import javax.script.ScriptEngineManager;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,15 +15,13 @@ import org.junit.Test;
 public class HelloTest {
 
     TaskRepository taskRepository;
-    JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory;
     TaskService taskService;
     Task task;
 
     @Before
     public void setUp() throws Exception {
         taskRepository = new TaskRepository();
-        javaScriptThreadRunnerFactory = new JavaScriptThreadRunnerFactoryStub();
-        taskService = new TaskService(taskRepository, javaScriptThreadRunnerFactory);
+        taskService = new TaskService(taskRepository, Executors.newFixedThreadPool(1), (Compilable)new ScriptEngineManager().getEngineByName("nashorn"));
         task = taskService.createTask("print(1);");
     }
 
@@ -30,21 +34,20 @@ public class HelloTest {
 
     @Test
     public void whenTaskExecutedThenOutputStored() throws Exception{
-        taskService.executeTask(task.getId());
-        Assert.assertNotNull(taskRepository.load(task.getId()).getConsoleOutput());
+        Assert.assertNotNull(task.getConsoleOutput());
     }
 
     @Test
     public void whenDeleteByIDThenTaskIsDELETED() throws Exception{
         taskService.killTaskByID(task.getId());
-        Assert.assertEquals(ScriptStatus.KILLED, taskRepository.load(task.getId()).getScriptStatus());
+        Assert.assertEquals(Task.Status.KILLED, taskRepository.load(task.getId()).get().getStatus());
     }
 
     @Test
     public void whenDeleteAllTasksThenAllTasksAreDELETED() throws Exception{
-        taskService.killAllTasks();
+        taskService.killAllQueuedTasks();
         for (Task task : taskRepository.loadAll()) {
-            Assert.assertEquals(ScriptStatus.KILLED, task.getScriptStatus());
+            Assert.assertEquals(Task.Status.KILLED, task.getStatus());
         }
     }
 }
