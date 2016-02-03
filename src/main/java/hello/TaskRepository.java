@@ -7,52 +7,42 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
+ * @deprecated it is now just wrapper around a map, consider removing this class completely
  */
 @Repository
+@Deprecated
 public class TaskRepository {
 
-    private final Map<UUID, Task> repository;
+    private final Map<UUID, Task> repository = new ConcurrentHashMap<UUID, Task>();
 
-    public TaskRepository() {
-        this.repository = new ConcurrentHashMap<UUID, Task>();
-    }
-
-    public synchronized void store(Task task){
+    public void store(Task task){
         repository.put(task.getId(), task);
     }
 
-    public synchronized Task load(UUID id){
-        return repository.get(id);
+    public Optional<Task> load(UUID id){
+        return Optional.ofNullable(repository.get(id));
     }
 
-    public synchronized Collection<Task> loadAll() {
+    public Collection<Task> loadAll() {
         return new ArrayList<Task>(repository.values());
     }
 
-    public synchronized void setKilled(UUID uuid){
-        Task task = repository.get(uuid);
-        switch (task.getScriptStatus()){
-            case WAITING:
-                task.setScriptStatus(ScriptStatus.KILLED);
-                break;
-            case RUNNING:
-                task.setScriptStatus(ScriptStatus.KILLED);
-                break;
-            default: break;
+    public void setKilled(UUID uuid){
+        load(uuid).get().kill();
+    }
+
+    public void setAllKilled(){
+        for (Task task : repository.values()) {
+            task.kill();
         }
     }
 
-    public synchronized void setAllKilled(){
-        for (Task task : loadAll()) {
-            setKilled(task.getId());
-        }
+    public Task delete(UUID uuid){
+        return repository.remove(uuid);
     }
 
-    public synchronized void delete(UUID uuid){
-        repository.remove(uuid);
-    }
-
-    public synchronized void deleteAll(){
+    public synchronized void deleteAllCompletedTasks(){
+    	// TODO only delete completed/error/killed
         repository.clear();
     }
 }

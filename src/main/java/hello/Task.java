@@ -1,49 +1,47 @@
 package hello;
 
-import java.time.LocalTime;
+import java.io.StringWriter;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+
+import javax.script.CompiledScript;
+import javax.script.ScriptContext;
+import javax.script.SimpleScriptContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
+ * TODO consider extending {@link FutureTask}
  */
-public class Task {
+public final class Task implements Callable<Task.Status>{
 
+	public static enum Status {
+	    WAITING, RUNNING, COMPLETED, ERROR, TERMINATED, KILLED
+	}
+	
+	private static final Logger log = LoggerFactory.getLogger(Task.class);
+	
     private final UUID id;
-    private final String code;
+    private final CompiledScript code;
+    private final StringWriter consoleOutput;
+    private Status status;
+    private Throwable exception;
+	private Future<Status> future;
 
-    private boolean isConsoleOutputOK;
-    private ScriptStatus scriptStatus;
-    private String consoleOutput;
-    private String exception;
-    private long executionStartTimeMillis;
-
-    public Task(String code) {
+    public Task(CompiledScript code) {
         this.id = UUID.randomUUID();
         this.code = code;
-        this.scriptStatus = ScriptStatus.WAITING;
+        this.consoleOutput = new StringWriter();
     }
 
-    public Task(Task task){
-        this.id = task.id;
-        this.code = task.code;
-        this.scriptStatus = task.scriptStatus;
-        this.consoleOutput = task.consoleOutput;
-    }
-
-    public boolean isConsoleOutputOK() {
-        return isConsoleOutputOK;
-    }
-
-    public void setConsoleOutputOK(boolean consoleOutputOK) {
-        isConsoleOutputOK = consoleOutputOK;
-    }
-
-    public String getException() {
-        return exception;
-    }
-
-    public void setException(String exception) {
-        this.exception = exception;
+    public Optional<Throwable> getException() {
+        return Optional.fromNullable(exception);
     }
 
     public UUID getId() {
@@ -51,67 +49,15 @@ public class Task {
     }
 
     public String getCode() {
-        return code;
+        return code.toString();
     }
 
-    public ScriptStatus getScriptStatus() {
-        return scriptStatus;
-    }
-
-    public void setScriptStatus(ScriptStatus scriptStatus) {
-        this.scriptStatus = scriptStatus;
+    public Status getStatus() {
+        return this.status;
     }
 
     public String getConsoleOutput() {
-        return consoleOutput;
-    }
-
-    public void setConsoleOutput(String consoleOutput) {
-        this.consoleOutput = consoleOutput;
-    }
-
-    public static boolean isValidTaskId(String value) {
-        try {
-            UUID.fromString(value);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public long getExecutionStartTimeMillis() {
-        return executionStartTimeMillis;
-    }
-
-    public void setExecutionStartTimeMillis(long executionStartTimeMillis) {
-        this.executionStartTimeMillis = executionStartTimeMillis;
-    }
-
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Task task = (Task) o;
-
-        if (isConsoleOutputOK != task.isConsoleOutputOK) return false;
-        if (id != null ? !id.equals(task.id) : task.id != null) return false;
-        if (code != null ? !code.equals(task.code) : task.code != null) return false;
-        if (scriptStatus != task.scriptStatus) return false;
-        if (consoleOutput != null ? !consoleOutput.equals(task.consoleOutput) : task.consoleOutput != null)
-            return false;
-        return exception != null ? exception.equals(task.exception) : task.exception == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + (code != null ? code.hashCode() : 0);
-        result = 31 * result + (isConsoleOutputOK ? 1 : 0);
-        result = 31 * result + (scriptStatus != null ? scriptStatus.hashCode() : 0);
-        result = 31 * result + (consoleOutput != null ? consoleOutput.hashCode() : 0);
-        result = 31 * result + (exception != null ? exception.hashCode() : 0);
-        return result;
+        return consoleOutput.toString();
     }
 
     @Override
@@ -119,10 +65,55 @@ public class Task {
         return "Task{" +
                 "id=" + id +
                 ", code='" + code + '\'' +
-                ", isConsoleOutputOK=" + isConsoleOutputOK +
-                ", scriptStatus=" + scriptStatus +
+                ", Status=" + status +
                 ", consoleOutput='" + consoleOutput + '\'' +
                 ", exception='" + exception + '\'' +
                 '}';
+    }
+
+    @Override
+    public synchronized Status call() throws Exception {
+        try {
+        	status(Status.RUNNING);
+            log.debug(getId() + " started in thread " + Thread.currentThread().getName());
+            final ScriptContext ctx = new SimpleScriptContext();
+            ctx.setWriter(consoleOutput);
+            ctx.setErrorWriter(consoleOutput);
+            ctx.setAttribute("id", this.id.toString(), ScriptContext.ENGINE_SCOPE);
+            this.code.eval(ctx);
+            status(Status.COMPLETED);
+        } catch (Exception e) {
+        	if (e instanceof InterruptedException) {
+        		status(Status.TERMINATED);
+        	} else {
+        		this.exception = e;
+        		status(Status.ERROR);
+            	throw e;
+        	}
+        }
+        return this.status;
+    }
+
+    public synchronized void scheduled(Future<Status> future) {
+    	this.future = future;
+        status(Status.WAITING);
+    }
+    
+    private Status status(Status s) {
+    	final Status oldStatus = this.status;
+    	this.status = s;
+    	// TODO notify observers here
+    	return oldStatus;
+    }
+    
+    public synchronized void kill() {
+    	switch (this.status){
+    	case WAITING:
+    	case RUNNING:
+    		this.future.cancel(true);
+    		// TODO how to kill script which does not block?
+    		status(Status.KILLED);
+    	default:
+    	}
     }
 }

@@ -1,74 +1,55 @@
 package hello;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+
+import javax.script.Compilable;
+import javax.script.CompiledScript;
+import javax.script.ScriptException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Created by Vladyslav Usenko on 16.01.2016.
  */
 @Service
-public class TaskService implements TaskListener {
-    private static final Log LOGGER = LogFactory.getLog(TaskService.class);
+public class TaskService  {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
-    private final ExecutorService executor;
-    private final Map<UUID, Future<TransferData>> taskFutureHashMap;
-    private final LinkedBlockingQueue<Task> taskQueue;
-    private final JavaScriptThreadsListener javaScriptThreadsListener;
-
-    @Autowired
-    private TaskRepository taskRepository;
+    final ExecutorService executor;
+    final TaskRepository taskRepository;
+    final Compilable scriptEngine;
 
     @Autowired
-    private JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory;
+    public TaskService(TaskRepository r, ExecutorService exec, Compilable scriptEngine) {
+    	this.executor = exec;
+    	this.taskRepository = r;
+		this.scriptEngine = scriptEngine;
 
-    public TaskService() {
-        executor = Executors.newCachedThreadPool();
-        taskFutureHashMap = new ConcurrentHashMap<UUID, Future<TransferData>>();
-        taskQueue = new LinkedBlockingQueue<Task>();
-        javaScriptThreadsListener = new JavaScriptThreadsListener(this, taskQueue);
-        executor.submit(javaScriptThreadsListener);
     }
 
-    public TaskService(TaskRepository taskRepository, JavaScriptThreadRunnerFactory javaScriptThreadRunnerFactory) {
-        this();
-
-        this.taskRepository = taskRepository;
-        this.javaScriptThreadRunnerFactory = javaScriptThreadRunnerFactory;
-    }
-
-    public Task createTask(String code) {
-        Task task = new Task(code);
+    public Task createTask(String script) throws ScriptException {
+    	final CompiledScript compiled = scriptEngine.compile(script);
+        Task task = new Task(compiled);
         taskRepository.store(task);
+        putTaskInQueueForExecution(task);
         return task;
     }
 
-    public void putTaskInQueueForExecution(UUID id){
-        this.taskQueue.add(taskRepository.load(id));
-        LOGGER.info("Current queue: " + this.taskQueue.toString());
-    }
-
-    public void executeTask(UUID id) {
-        Task task = taskRepository.load(id);
-        task.setScriptStatus(ScriptStatus.RUNNING);
-        taskRepository.store(task);
-        javaScriptThreadRunnerFactory.createJavaScriptService(task, this);
+    void putTaskInQueueForExecution(Task task){
+    	task.scheduled(this.executor.submit(task));
     }
 
     public void killTaskByID(UUID uuid) {
-        Future<TransferData> future = taskFutureHashMap.get(uuid);
-        future.cancel(true);
         taskRepository.setKilled(uuid);
     }
 
-    public void killAllTasks() {
-        for (Future<TransferData> future : taskFutureHashMap.values()) {
-            future.cancel(true);
-        }
+    public void killAllQueuedTasks() {
         taskRepository.setAllKilled();
     }
 
@@ -76,11 +57,11 @@ public class TaskService implements TaskListener {
         taskRepository.delete(uuid);
     }
 
-    public void deleteAllTasks() {
-        taskRepository.deleteAll();
+    public void deleteAllCompletedTasks() {
+        taskRepository.deleteAllCompletedTasks();
     }
 
-    public Task getTask(UUID uuid) {
+    public Optional<Task> getTask(UUID uuid) {
         return taskRepository.load(uuid);
     }
 
@@ -88,13 +69,4 @@ public class TaskService implements TaskListener {
         return taskRepository.loadAll();
     }
 
-    @Override
-    public void onStart(UUID id, Future<TransferData> future) {
-        taskFutureHashMap.put(id, future);
-    }
-
-    @Override
-    public void onComplete(Task task) {
-        taskRepository.store(task);
-    }
 }

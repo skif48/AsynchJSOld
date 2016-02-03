@@ -68,4 +68,6 @@ target
 
 *.iml
 
-
+.classpath
+.project
+.settings
