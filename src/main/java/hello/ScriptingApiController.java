@@ -1,15 +1,15 @@
 package hello;
 
 import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodCall;
+import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.fromMethodName;
 import static org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder.on;
 
 import java.io.Writer;
 import java.util.Collection;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
-import javax.script.Compilable;
-import javax.script.CompiledScript;
 import javax.script.ScriptException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,14 +60,16 @@ public class ScriptingApiController {
     @RequestMapping(value = "/task/{taskID}", method = RequestMethod.GET)
     @ResponseBody
     Task getTaskByID(@PathVariable("taskID") final UUID taskID) {
-        return taskService.getTask(taskID).orElseThrow(()-> new NoSuchElementException(taskID.toString()));
+
+        Optional<Task> task = taskService.getTask(taskID);
+        return task.orElseThrow(()-> new NoSuchElementException(taskID.toString()));
     }
 
     @RequestMapping(value = "/task", method = RequestMethod.POST)
     ResponseEntity<Void> executeTask(@RequestBody String javascript) throws ScriptException {
         Task task = taskService.createTask(javascript);
         return ResponseEntity.created(
-        		fromMethodCall(on(ScriptingApiController.class).getTaskByID(task.getId()))
+        		fromMethodName(ScriptingApiController.class, "getTaskByID", task.getId())
         		.build()
         		.toUri()
         	).build();
@@ -132,5 +134,4 @@ public class ScriptingApiController {
     public String handleNotFoundException(NoSuchElementException ex) {
         return HttpStatus.NOT_FOUND.getReasonPhrase() + ": " + ex.toString();
     }
-    
 }

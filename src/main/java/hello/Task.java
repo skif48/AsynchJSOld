@@ -21,7 +21,7 @@ import com.google.common.base.Optional;
  */
 public final class Task implements Callable<Task.Status>{
 
-	public static enum Status {
+	public enum Status {
 	    WAITING, RUNNING, COMPLETED, ERROR, TERMINATED, KILLED
 	}
 	
@@ -64,7 +64,7 @@ public final class Task implements Callable<Task.Status>{
     public String toString() {
         return "Task{" +
                 "id=" + id +
-                ", code='" + code + '\'' +
+                ", code='" + code.toString() + '\'' +
                 ", Status=" + status +
                 ", consoleOutput='" + consoleOutput + '\'' +
                 ", exception='" + exception + '\'' +
